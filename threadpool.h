@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <condition_variable>
 #include <mutex>
 #include <queue>
@@ -102,13 +102,13 @@ public:
                 break;
             }
 #ifdef debuglog
-            std::cout<<"消费者ID："<<std::this_thread::get_id()<<std::endl;
+            cout<<"消费者ID："<<std::this_thread::get_id()<<endl;
 #endif
             task();
 
         }
     }
-    // 生产者
+    // 生产者  c++17
    template<class F, class... Args>
     auto AddTask(F&& f, Args&&... args)
     {
@@ -133,6 +133,25 @@ public:
 
         return res;
     }
+
+    //c++11 简单实现
+    void  AddTaskSimple(std::function<void(std::string)>Func,std::string name)
+        {
+           auto task = std::make_shared<std::packaged_task<void(std::string)>>( std::bind(Func, name));
+           int randdom = rand();
+           id = randdom % thread_num;
+           #ifdef debuglog
+                   std::cout<<"生产者ID："<<std::this_thread::get_id()
+                           <<" 线程ID："<<id
+                           <<"Rand:"<<randdom
+                           <<" 线程队列大小："<<queues[id].size()
+                           <<std::endl;
+
+           #endif
+           queues[id].push([task = std::move(task),name] { (*task)(name); });
+
+        }
+
 
     ~ThreadPool()
     {

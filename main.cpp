@@ -1,4 +1,4 @@
-#include"threadpool.h"
+﻿#include"threadpool.h"
 
 
 
@@ -14,6 +14,10 @@ public:
     {
         return num + data.size();
     }
+    void taskone(std::string data)
+    {
+        std::cout<<data<<std::endl;
+    }
     static int taskstatic(int num,const std::string &data)
     {
         return num + data.size();
@@ -24,22 +28,22 @@ int main()
     cout << "Hello World!" << endl;
     std::vector<std::future<int>>vec;
     ThreadPool pool(4);
-    // 案例1 lambda表达式：
-    for(int i =0;i<20;i++)
-    {
+//    // 案例1 lambda表达式：
+//    for(int i =0;i<20;i++)
+//    {
 
-        vec.emplace_back(
-                    pool.AddTask([i]{
-                    std::this_thread::sleep_for(std::chrono::seconds(5));
-                    return i*i;
-        }));
-    }
-    // 案例2:（普通函数，）
-    for(int i =0;i<20;i++)
-    {
-        auto taskfun = pool.AddTask(task,123 + i,"data");
-        vec.emplace_back(std::move(taskfun));
-    }
+//        vec.emplace_back(
+//                    pool.AddTask([i]{
+//                    std::this_thread::sleep_for(std::chrono::seconds(5));
+//                    return i*i;
+//        }));
+//    }
+//    // 案例2:（普通函数，）
+//    for(int i =0;i<20;i++)
+//    {
+//        auto taskfun = pool.AddTask(task,123 + i,"data");
+//        vec.emplace_back(std::move(taskfun));
+//    }
 
     // 案例3:（类成员函数）
     TestObj obj;
@@ -49,14 +53,22 @@ int main()
         auto taskfun = pool.AddTask(func,123+i,"1234567");
         vec.emplace_back(std::move(taskfun));
     }
-     // 案例3:（静态函数）
+
+//     // 案例3:（静态函数）
+//    for(int i =0;i<20;i++)
+//    {
+//        std::function<int(int,string)> func = bind(&TestObj::taskstatic,placeholders::_1,placeholders::_2);
+//        auto taskfun = pool.AddTask(func,123+i,"1234567");
+//        vec.emplace_back(std::move(taskfun));
+//    }
+
+    // 简单使用
+    TestObj obj_simple;
     for(int i =0;i<20;i++)
     {
-        std::function<int(int,string)> func = bind(&TestObj::taskstatic,placeholders::_1,placeholders::_2);
-        auto taskfun = pool.AddTask(func,123+i,"1234567");
-        vec.emplace_back(std::move(taskfun));
+        std::function<void(std::string)>func1 = bind(&TestObj::taskone,&obj_simple,placeholders::_1);
+        pool.AddTaskSimple(func1,"1234567");
     }
-
     for(auto &&result:vec)
     {
         std::cout<<"get_data:" << result.get()<<std::endl;
