@@ -96,19 +96,16 @@ public:
     {
         for(;;)
         {
-            std::function<void()> task;
+            std::function<void(void)>task;
             if (!queues[id].pop(task))
             {
                 break;
             }
-#ifdef debuglog
-            cout<<"消费者ID："<<std::this_thread::get_id()<<endl;
-#endif
             task();
-
         }
     }
     // 生产者  c++17
+#if 1
    template<class F, class... Args>
     auto AddTask(F&& f, Args&&... args)
     {
@@ -118,38 +115,24 @@ public:
         auto task = std::make_shared< std::packaged_task<return_type()> >(
                     std::bind(std::forward<F>(f), std::forward<Args>(args)...)
                     );
-
         std::future<return_type> res = task->get_future();
         //产生随机数，把task 分配给对应的线程队列中
         id = rand() % thread_num;
-#ifdef debuglog
-        std::cout<<"生产者ID："<<std::this_thread::get_id()
-                <<" 线程ID："<<id
-                <<" 线程队列大小："<<queues[id].size()
-                <<std::endl;
-
-#endif
         queues[id].push([task = std::move(task)] { (*task)(); });
 
         return res;
     }
-
+#endif
     //c++11 简单实现
-    void  AddTaskSimple(std::function<void(std::string)>Func,std::string name)
+    // 将入参简化去掉了,将参数控制权交给 func, 参数有多少个取决于bind 绑定函数的函数 由调用者决定并处理
+    // 例如： std::bind(task1,"3333333333333"，"222222","......")
+    // 缺点：无返回值
+    template<class Func>
+    void  AddTaskSimple(Func fun)
         {
-           auto task = std::make_shared<std::packaged_task<void(std::string)>>( std::bind(Func, name));
-           int randdom = rand();
-           id = randdom % thread_num;
-           #ifdef debuglog
-                   std::cout<<"生产者ID："<<std::this_thread::get_id()
-                           <<" 线程ID："<<id
-                           <<"Rand:"<<randdom
-                           <<" 线程队列大小："<<queues[id].size()
-                           <<std::endl;
-
-           #endif
-           queues[id].push([task = std::move(task),name] { (*task)(name); });
-
+            auto task =  std::make_shared<std::packaged_task<void(void)>>(fun);
+            id = rand() % thread_num;
+            queues[id].push([task1 = std::move(task)] { (*task1)(); });
         }
 
 
